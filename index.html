@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>معدلي - الإصدار الاحترافي</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.6);
+            --input-bg: rgba(15, 23, 42, 0.8);
+            --border-color: rgba(99, 102, 241, 0.2);
+            --accent: #6366f1;
+            --accent-glow: 0 0 15px rgba(99, 102, 241, 0.4);
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Tajawal', sans-serif; transition: all 0.2s ease; }
+        
+        body {
+            background: radial-gradient(circle at 50% -20%, #1e293b, var(--bg-color));
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px 10px;
+        }
+
+        .container { max-width: 1000px; margin: 0 auto; }
+        
+        header { text-align: center; margin-bottom: 30px; animation: fadeInDown 0.6s; }
+        header h1 { font-size: 2.5rem; font-weight: 800; background: linear-gradient(to right, #818cf8, #c084fc); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        header p { color: var(--text-muted); margin-top: 5px; }
+
+        /* التصميم الزجاجي للبطاقات */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.8s;
+        }
+
+        /* تنسيق الجدول */
+        .table-wrapper { overflow-x: auto; border-radius: 12px; margin-bottom: 20px; }
+        table { width: 100%; min-width: 700px; border-collapse: collapse; }
+        th { background: rgba(15, 23, 42, 0.9); padding: 15px; font-weight: 700; color: #818cf8; text-align: center; }
+        td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); text-align: center; vertical-align: middle; }
+        tr:hover { background: rgba(255,255,255,0.02); }
+
+        /* المدخلات */
+        input[type="number"], select {
+            width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+            background: var(--input-bg); color: white; text-align: center; outline: none;
+        }
+        input:focus, select:focus { border-color: var(--accent); box-shadow: var(--accent-glow); }
+        .special-inputs { display: flex; gap: 5px; }
+        .grade-display { font-size: 1.2rem; font-weight: bold; }
+
+        /* الأزرار */
+        .btn-container { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; }
+        .btn {
+            padding: 12px 25px; border: none; border-radius: 10px; font-size: 1rem; font-weight: 700;
+            cursor: pointer; display: flex; align-items: center; gap: 8px; color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn:active { transform: translateY(0); }
+        .btn-add { background: linear-gradient(135deg, #3b82f6, #4f46e5); }
+        .btn-calc { background: linear-gradient(135deg, #10b981, #059669); }
+        .btn-export { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .btn-reset { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+        .btn-reset:hover { background: var(--danger); color: white; }
+        .btn-icon { background: rgba(239, 68, 68, 0.2); color: #fca5a5; padding: 10px; border-radius: 8px; border: none; cursor: pointer; }
+        .btn-icon:hover { background: var(--danger); color: white; }
+
+        /* قسم النتائج والرسم البياني */
+        #resultSection { display: none; text-align: center; }
+        .final-gpa { font-size: 4rem; font-weight: 800; margin: 10px 0; text-shadow: 0 0 20px rgba(255,255,255,0.1); }
+        .chart-container { position: relative; height: 300px; width: 100%; margin-top: 20px; }
+
+        /* الإشعارات العصرية (Toast) */
+        #toast {
+            visibility: hidden; min-width: 250px; background-color: var(--accent); color: #fff;
+            text-align: center; border-radius: 10px; padding: 16px; position: fixed; z-index: 1000;
+            left: 50%; bottom: 30px; transform: translateX(-50%); opacity: 0; transition: opacity 0.3s, bottom 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); font-weight: bold;
+        }
+        #toast.show { visibility: visible; bottom: 50px; opacity: 1; }
+
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1><i class="fas fa-microchip"></i> حاسبة المعدل الذكية</h1>
+        <p>نظام احترافي وسريع لحساب المعدل الفصلي</p>
+    </header>
+
+    <div class="glass-card" id="calculatorCard">
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">رقم</th>
+                        <th style="width: 90px;">المعامل</th>
+                        <th style="width: 170px;">نظام التقييم</th>
+                        <th>الأعمال (TD/TP)</th>
+                        <th>الامتحان</th>
+                        <th style="width: 100px;">المعدل</th>
+                        <th style="width: 60px;">حذف</th>
+                    </tr>
+                </thead>
+                <tbody id="gradesTable">
+                    </tbody>
+            </table>
+        </div>
+
+        <div class="btn-container">
+            <button class="btn btn-add" onclick="addRow()"><i class="fas fa-plus"></i> إضافة مقياس</button>
+            <button class="btn btn-calc" onclick="calculateGPA()"><i class="fas fa-equals"></i> احسب المعدل</button>
+            <button class="btn btn-reset" onclick="resetAll()"><i class="fas fa-trash-alt"></i> مسح الكل</button>
+        </div>
+    </div>
+
+    <div class="glass-card" id="resultSection">
+        <h2 style="color: var(--text-muted);">المعدل الفصلي العام</h2>
+        <div class="final-gpa" id="finalGpaDisplay">0.00</div>
+        
+        <div class="btn-container" style="margin-bottom: 20px;">
+            <button class="btn btn-export" onclick="exportResult()"><i class="fas fa-download"></i> حفظ النتيجة كصورة</button>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="performanceChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div id="toast">تم الإجراء بنجاح</div>
+
+<script>
+    let rowCount = 0;
+    let myChart = null;
+
+    // دالة إظهار الإشعارات
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById("toast");
+        toast.innerText = message;
+        toast.style.backgroundColor = type === 'error' ? 'var(--danger)' : 'var(--accent)';
+        toast.className = "show";
+        setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+    }
+
+    // إنشاء صف جديد
+    function addRow(data = null) {
+        rowCount++;
+        const tbody = document.getElementById('gradesTable');
+        const tr = document.createElement('tr');
+        tr.id = `row${rowCount}`;
+        
+        // القيم الافتراضية أو المحملة من الذاكرة
+        const coefVal = data ? data.coef : 1;
+        const typeVal = data ? data.type : '40-60';
+        const tpVal = data ? data.tp : '';
+        const examVal = data ? data.exam : '';
+        const lecVal = data ? data.lec : '';
+        const pracVal = data ? data.prac : '';
+
+        tr.innerHTML = `
+            <td style="color: var(--text-muted); font-weight: bold;">${rowCount}</td>
+            <td><input type="number" id="coef${rowCount}" value="${coefVal}" min="1" onchange="autoSave()"></td>
+            <td>
+                <select id="type${rowCount}" onchange="toggleInputs(${rowCount}); autoSave()">
+                    <option value="40-60" ${typeVal==='40-60'?'selected':''}>عادي (40/60)</option>
+                    <option value="50-50" ${typeVal==='50-50'?'selected':''}>تخصص (50/50)</option>
+                    <option value="33-67" ${typeVal==='33-67'?'selected':''}>مقياس (33/67)</option>
+                    <option value="law" ${typeVal==='law'?'selected':''}>نظام الحقوق</option>
+                    <option value="exam" ${typeVal==='exam'?'selected':''}>امتحان فقط</option>
+                    <option value="tp" ${typeVal==='tp'?'selected':''}>تطبيقي فقط</option>
+                </select>
+            </td>
+            <td>
+                <div id="tpBox${rowCount}">
+                    <input type="number" id="tp${rowCount}" value="${tpVal}" placeholder="نقطة TD/TP" oninput="calcRow(${rowCount})">
+                </div>
+                <div id="lawBox${rowCount}" class="special-inputs" style="display:none;">
+                    <input type="number" id="lec${rowCount}" value="${lecVal}" placeholder="محاضرة" oninput="calcRow(${rowCount})">
+                    <input type="number" id="prac${rowCount}" value="${pracVal}" placeholder="تطبيقي" oninput="calcRow(${rowCount})">
+                </div>
+            </td>
+            <td><input type="number" id="exam${rowCount}" value="${examVal}" placeholder="الامتحان" oninput="calcRow(${rowCount})"></td>
+            <td class="grade-display" id="grade${rowCount}">-</td>
+            <td><button class="btn-icon" onclick="deleteRow(${rowCount})"><i class="fas fa-times"></i></button></td>
+        `;
+        tbody.appendChild(tr);
+        toggleInputs(rowCount, false); 
+        calcRow(rowCount, false);
+        
+        if(!data) { autoSave(); }
+    }
+
+    // تغيير الحقول حسب النظام المختار
+    function toggleInputs(id, save = true) {
+        const type = document.getElementById(`type${id}`).value;
+        const tpBox = document.getElementById(`tpBox${id}`);
+        const lawBox = document.getElementById(`lawBox${id}`);
+        const examInput = document.getElementById(`exam${id}`);
+
+        tpBox.style.display = (type === 'law' || type === 'exam') ? 'none' : 'block';
+        lawBox.style.display = type === 'law' ? 'flex' : 'none';
+        examInput.disabled = type === 'tp';
+        
+        if(examInput.disabled) examInput.value = '';
+        calcRow(id, save);
+    }
+
+    // حساب معدل سطر واحد
+    function calcRow(id, save = true) {
+        const type = document.getElementById(`type${id}`).value;
+        const tp = parseFloat(document.getElementById(`tp${id}`).value) || 0;
+        const exam = parseFloat(document.getElementById(`exam${id}`).value) || 0;
+        const lec = parseFloat(document.getElementById(`lec${id}`)?.value) || 0;
+        const prac = parseFloat(document.getElementById(`prac${id}`)?.value) || 0;
+        
+        let grade = 0;
+        switch(type) {
+            case '40-60': grade = (tp * 0.4) + (exam * 0.6); break;
+            case '50-50': grade = (tp * 0.5) + (exam * 0.5); break;
+            case '33-67': grade = (tp * 0.33) + (exam * 0.67); break;
+            case 'law': grade = (((lec * 2 + prac) / 3) * 0.4) + (exam * 0.6); break;
+            case 'exam': grade = exam; break;
+            case 'tp': grade = tp; break;
+        }
+
+        const gradeCell = document.getElementById(`grade${id}`);
+        const hasInput = document.getElementById(`tp${id}`).value !== '' || document.getElementById(`exam${id}`).value !== '' || document.getElementById(`lec${id}`)?.value !== '';
+        
+        if(hasInput) {
+            gradeCell.innerText = grade.toFixed(2);
+            gradeCell.style.color = grade >= 10 ? 'var(--success)' : 'var(--danger)';
+        } else {
+            gradeCell.innerText = '-';
+            gradeCell.style.color = 'inherit';
+        }
+        
+        if(save) autoSave();
+        return { grade, hasInput };
+    }
+
+    // حذف سطر
+    function deleteRow(id) {
+        document.getElementById(`row${id}`).remove();
+        autoSave();
+    }
+
+    // الحفظ التلقائي في المتصفح
+    function autoSave() {
+        const rows = document.getElementById('gradesTable').children;
+        const data = [];
+        for(let tr of rows) {
+            const id = tr.id.replace('row', '');
+            data.push({
+                coef: document.getElementById(`coef${id}`).value,
+                type: document.getElementById(`type${id}`).value,
+                tp: document.getElementById(`tp${id}`).value,
+                exam: document.getElementById(`exam${id}`).value,
+                lec: document.getElementById(`lec${id}`)?.value || '',
+                prac: document.getElementById(`prac${id}`)?.value || ''
+            });
+        }
+        localStorage.setItem('gpaData', JSON.stringify(data));
+    }
+
+    // استرجاع البيانات عند فتح الموقع
+    function loadData() {
+        const saved = localStorage.getItem('gpaData');
+        if(saved) {
+            const data = JSON.parse(saved);
+            if(data.length > 0) {
+                data.forEach(item => addRow(item));
+                return;
+            }
+        }
+        // إذا لم تكن هناك بيانات، أضف 3 صفوف كبداية
+        addRow(); addRow(); addRow();
+    }
+
+    // مسح جميع البيانات
+    function resetAll() {
+        if(confirm('هل أنت متأكد من مسح جميع البيانات؟')) {
+            localStorage.removeItem('gpaData');
+            document.getElementById('gradesTable').innerHTML = '';
+            document.getElementById('resultSection').style.display = 'none';
+            rowCount = 0;
+            addRow(); addRow(); addRow();
+            showToast('تم مسح البيانات بنجاح', 'success');
+        }
+    }
+
+    // الحساب النهائي ورسم المخطط
+    function calculateGPA() {
+        const rows = document.getElementById('gradesTable').children;
+        if(rows.length === 0) return showToast("قم بإضافة مقياس واحد على الأقل!", "error");
+
+        let totalPoints = 0;
+        let totalCoef = 0;
+        let chartLabels = [];
+        let chartData = [];
+        let chartColors = [];
+
+        for(let tr of rows) {
+            const id = tr.id.replace('row', '');
+            const coef = parseFloat(document.getElementById(`coef${id}`).value) || 0;
+            const result = calcRow(id, false);
+
+            if(result.hasInput) {
+                totalPoints += result.grade * coef;
+                totalCoef += coef;
+                
+                chartLabels.push(`مقياس ${id}`);
+                chartData.push(result.grade.toFixed(2));
+                chartColors.push(result.grade >= 10 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(239, 68, 68, 0.7)');
+            }
+        }
+
+        if(totalCoef === 0) return showToast("يرجى إدخال النقاط للحساب!", "error");
+
+        const finalAvg = totalPoints / totalCoef;
+        
+        // عرض النتيجة
+        document.getElementById('resultSection').style.display = 'block';
+        const finalDisplay = document.getElementById('finalGpaDisplay');
+        finalDisplay.innerText = finalAvg.toFixed(2);
+        finalDisplay.style.color = finalAvg >= 10 ? 'var(--success)' : 'var(--danger)';
+        finalDisplay.style.textShadow = finalAvg >= 10 ? '0 0 20px rgba(16, 185, 129, 0.3)' : '0 0 20px rgba(239, 68, 68, 0.3)';
+
+        showToast("تم الحساب بنجاح!");
+        document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+
+        // تحديث الرسم البياني
+        updateChart(chartLabels, chartData, chartColors);
+    }
+
+    // دالة إنشاء/تحديث الرسم البياني
+    function updateChart(labels, data, colors) {
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        
+        if(myChart) myChart.destroy();
+        
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'معدل المقياس',
+                    data: data,
+                    backgroundColor: colors,
+                    borderColor: colors.map(c => c.replace('0.7', '1')),
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { 
+                        beginAtZero: true, max: 20,
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#94a3b8' }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // تصدير كصورة
+    function exportResult() {
+        const element = document.getElementById('resultSection');
+        html2canvas(element, { backgroundColor: '#0f172a' }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'نظام_التقييم_الجامعي.png';
+            link.href = canvas.toDataURL();
+            link.click();
+            showToast('تم حفظ الصورة بنجاح!');
+        });
+    }
+
+    // تهيئة الموقع عند الفتح
+    window.onload = loadData;
+</script>
+
+</body>
+</html>
